@@ -10,7 +10,7 @@ export interface Fx<Y, R, A> {
 }
 
 export const fx = <Y, R, A>(f: () => Generator<Y, R, A>): Fx<Y, R, A> => ({
-  [Symbol.iterator]: () => f()
+  [Symbol.iterator]: f
 })
 
 export const pure = <R>(r: R): Fx<never, R, never> => ({
