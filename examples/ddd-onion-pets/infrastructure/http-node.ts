@@ -14,8 +14,7 @@ export const request = <Request extends GetRequest | PostRequest<unknown>, Respo
 
 export const createNodeRequest = <Request extends GetRequest | PostRequest<unknown>>(
   request: Request
-): NodeHttpRequestOptions =>
-  request.method === 'POST' ? { ...request, body: JSON.stringify(request.body) } : { ...request }
+): NodeHttpRequestOptions => (request.method === 'POST' ? { ...request, body: JSON.stringify(request.body) } : request)
 
 const handleResponse = <Request extends GetRequest | PostRequest<unknown>>(
   request: Request,
