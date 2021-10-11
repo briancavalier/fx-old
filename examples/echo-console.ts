@@ -47,7 +47,7 @@ const main = fx(function* () {
 // process.stdin.
 // So, handled still isn't runnable.  We need to handle the
 // Async effect that this handler introduced.
-const handled = handle(main, function* (effect) {
+const handled = handle(main, function* (effect: Print | Read) {
   if (effect instanceof Print) return process.stdout.write(effect.arg)
 
   if (effect instanceof Read)

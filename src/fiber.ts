@@ -10,25 +10,22 @@ export const promise = <A>([, promise]: Fiber<A>): Promise<A> => promise
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const noDispose = () => {}
 
-export const fork = <R, A, Y extends Async<unknown>>(f: Fx<Y, R, A>): Fx<never, Fiber<R>, never> =>
+export const fork = <Y extends Async<unknown>, R, A>(f: Fx<Y, R>): Fx<never, Fiber<R>> =>
   fx(function* () {
     let _dispose: Dispose = noDispose
 
-    const stepAsync = async (i: Iterator<Y, R, A>, ir: IteratorResult<Y, R>): Promise<R> => {
-      if (ir.done) return ir.value
-
-      const a = await new Promise((resolve) => {
-        _dispose = ir.value.arg(resolve)
-      })
-      return stepAsync(i, i.next(a as A))
+    const stepAsync = (i: Iterator<Y, R, A>, ir: IteratorResult<Y, R>, k: (r: R) => void): void => {
+      if (ir.done) {
+        _dispose = noDispose
+        return k(ir.value)
+      }
+      _dispose = ir.value.arg((a) => stepAsync(i, i.next(a as A), k))
     }
 
     const i = f[Symbol.iterator]()
     const dispose = () => _dispose()
-    const promise = stepAsync(i, i.next()).then((x) => {
-      _dispose = noDispose
-      return x
-    })
+
+    const promise = new Promise<R>((resolve) => stepAsync(i, i.next(), resolve))
 
     return [dispose, promise]
   })

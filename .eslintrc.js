@@ -21,10 +21,10 @@ module.exports = {
     'require-yield': 'off',
     '@typescript-eslint/no-use-before-define': 'off',
     '@typescript-eslint/naming-convention': 'error',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
     'import/order': [
       'error',
       {
-        'newlines-between': 'always',
         alphabetize: {
           order: 'asc',
           caseInsensitive: false
