@@ -28,11 +28,7 @@ const handleResponse = <Request extends GetRequest | PostRequest<unknown>>(
 
     const result = yield* readResponseBody(response)
 
-    if (result instanceof Error) {
-      return yield* fail(result)
-    }
-
-    return result
+    return result instanceof Error ? yield* fail(result) : result
   })
 
 export type NodeHttpRequestOptions = {
