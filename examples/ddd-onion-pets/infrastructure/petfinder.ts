@@ -53,8 +53,5 @@ export const getPetfinderToken = fx(function* () {
   const { baseUrl } = yield* new GetPetfinderConfig()
   const credentials = yield* new GetPetfinderCredentials()
 
-  return yield* post<
-    PetfinderCredentials,
-    PetfinderToken
-  >(new URL(`oauth2/token`, baseUrl), credentials)
+  return yield* post<PetfinderCredentials, PetfinderToken>(new URL(`oauth2/token`, baseUrl), credentials)
 })

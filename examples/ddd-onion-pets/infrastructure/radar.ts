@@ -5,14 +5,12 @@ import { Location } from '../domain/pets'
 import { get } from './http'
 
 export type RadarIPGeocodeResult = {
-  address: RadarAddress
-}
-
-export type RadarAddress = {
-  city: string
-  state: string
-  latitude: number
-  longitude: number
+  address: {
+    city: string
+    state: string
+    latitude: number
+    longitude: number
+  }
 }
 
 export type RadarConfig = {
