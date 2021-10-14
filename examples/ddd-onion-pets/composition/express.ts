@@ -1,7 +1,7 @@
 import express from 'express'
 import { Fail, fail } from '../../../src/fail'
 
-import { fork, promise } from '../../../src/fiber'
+import { forkFiber, promise } from '../../../src/fiber'
 import { fx, handler, run } from '../../../src/fx'
 import { IPAddress } from '../application/getPetsNear'
 import { GetRequest, Http, PostRequest } from '../infrastructure/http'
@@ -57,7 +57,7 @@ const handleHttp = handler(function* (effect: Http<GetRequest | PostRequest<unkn
   return yield effect
 })
 
-const nodeExpressGetPets = (ip: IPAddress) => pipe(ip, getPets, handleConfig, handleHttp, attempt, fork)
+const nodeExpressGetPets = (ip: IPAddress) => pipe(ip, getPets, handleConfig, handleHttp, attempt, forkFiber)
 
 express()
   .get('/', async (req, res) => {

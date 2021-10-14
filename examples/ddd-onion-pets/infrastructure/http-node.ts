@@ -44,22 +44,19 @@ export const http =
       url.protocol === 'https:' ? requestHttps(url.toString(), options, k) : requestHttp(url.toString(), options, k)
 
     c.end(options.method === 'POST' && options.body)
-    return () => (console.log('destroy'), c.destroy())
+    return () => c.destroy()
   }
 
 export const readResponseBody = (r: IncomingMessage): Async<string | Error> =>
-  async(
-    asTask(async () => {
-      let d = ''
-      for await (const s of r) d += s
-      return d
-    })
-  )
+  fromPromise(async () => {
+    let d = ''
+    for await (const s of r) d += s
+    return d
+  })
 
-const asTask =
-  <A, E = unknown>(f: () => Promise<A>): Task<A | E> =>
-  (k) => {
+const fromPromise = <A, E = unknown>(f: () => Promise<A>): Async<A | E> =>
+  async((k) => {
     f().then(k, k)
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     return () => {}
-  }
+  })

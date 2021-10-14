@@ -2,7 +2,7 @@ import { EOL } from 'os'
 import { createInterface } from 'readline'
 
 import { async } from '../src/async'
-import { fork } from '../src/fiber'
+import { forkFiber } from '../src/fiber'
 import { Effect, fx, handle, run } from '../src/fx'
 
 //---------------------------------------------------------------
@@ -65,7 +65,7 @@ const handled = handle(main, function* (effect: Print | Read) {
 
 // Finally, we can handle the Async effect using the
 // provided fork effect handler.
-const runnable = fork(handled)
+const runnable = forkFiber(handled)
 
 // Since runnable produces no effects, we can run it.
 run(runnable)
