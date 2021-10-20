@@ -2,8 +2,8 @@ import { EOL } from 'os'
 import { createInterface } from 'readline'
 
 import { async } from '../src/async'
-import { forkFiber } from '../src/fiber'
-import { Effect, fx, handle, run } from '../src/fx'
+import { Effect, fx, handler, run } from '../src/fx'
+import { withFiberAsync } from '../src/handle/fiberAsync'
 
 //---------------------------------------------------------------
 // effects
@@ -43,12 +43,9 @@ const main = fx(function* () {
 // This handler handles the Print and Read effects. It handles
 // Print by simply printing the string to process.stdout.
 // However, it handles Read by introducing *another effect*,
-// in this case, Async, to read a line asynchronously from
-// process.stdin.
-// So, handled still isn't runnable.  We need to handle the
-// Async effect that this handler introduced.
-const handled = handle(main, function* (effect: Print | Read) {
-  if (effect instanceof Print) return process.stdout.write(effect.arg)
+// Async, to read a line from process.stdin.
+const handle = handler(function* (effect: Print | Read) {
+  if (effect instanceof Print) return void process.stdout.write(effect.arg)
 
   if (effect instanceof Read)
     return yield* async<string>((k) => {
@@ -63,9 +60,12 @@ const handled = handle(main, function* (effect: Print | Read) {
   return yield effect
 })
 
-// Finally, we can handle the Async effect using the
-// provided fork effect handler.
-const runnable = forkFiber(handled)
+// So, handled still isn't runnable.  We need to handle the
+// Async effect that this handler introduced.
+const handled = handle(main)
+
+// Finally, we can handle the Async effect.
+const runnable = withFiberAsync(handled)
 
 // Since runnable produces no effects, we can run it.
 run(runnable)

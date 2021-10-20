@@ -1,17 +1,31 @@
 import express from 'express'
 import { Fail, fail } from '../../../src/fail'
 
-import { forkFiber, promise } from '../../../src/fiber'
+import { promise } from '../../../src/fiber'
 import { fx, handler, run } from '../../../src/fx'
+import { withFiberAsync } from '../../../src/handle/fiberAsync'
 import { IPAddress } from '../application/getPetsNear'
 import { GetRequest, Http, PostRequest } from '../infrastructure/http'
 import { request } from '../infrastructure/http-node'
-import { GetPetfinderConfig, GetPetfinderCredentials } from '../infrastructure/petfinder'
-import { GetRadarConfig } from '../infrastructure/radar'
+import {
+  GetPetfinderConfig,
+  GetPetfinderCredentials,
+  PetfinderConfig,
+  PetfinderCredentials
+} from '../infrastructure/petfinder'
+import { GetRadarConfig, RadarConfig } from '../infrastructure/radar'
 import { attempt } from '../lib/catchError'
 import { GetEnv, getEnv } from '../lib/env'
 import { pipe } from '../lib/pipe'
 import { getPets } from './getPets'
+
+type Config = {
+  radar: RadarConfig
+  petfinder: {
+    config: PetfinderConfig
+    credentials: PetfinderCredentials
+  }
+}
 
 const getConfig = fx(function* () {
   const env = yield* getEnv
@@ -32,7 +46,7 @@ const getConfig = fx(function* () {
         /* eslint-enable @typescript-eslint/naming-convention */
       }
     }
-  }
+  } as const
 })
 
 const failEnvVarNotSet = (name: string) => fail(new Error(`${name} env var must be set`))
@@ -43,28 +57,30 @@ const handleNodeConfig = handler(function* (effect: GetEnv | Fail<unknown>) {
   return yield effect
 })
 
-const config = run(pipe(getConfig, handleNodeConfig))
-
-const handleConfig = handler(function* (effect: GetRadarConfig | GetPetfinderConfig | GetPetfinderCredentials) {
-  if (effect instanceof GetRadarConfig) return config.radar
-  if (effect instanceof GetPetfinderConfig) return config.petfinder.config
-  if (effect instanceof GetPetfinderCredentials) return config.petfinder.credentials
-  return yield effect
-})
+const handleConfig = (config: Config) =>
+  handler(function* (effect: GetRadarConfig | GetPetfinderConfig | GetPetfinderCredentials) {
+    if (effect instanceof GetRadarConfig) return config.radar
+    if (effect instanceof GetPetfinderConfig) return config.petfinder.config
+    if (effect instanceof GetPetfinderCredentials) return config.petfinder.credentials
+    return yield effect
+  })
 
 const handleHttp = handler(function* (effect: Http<GetRequest | PostRequest<unknown>, unknown>) {
   if (effect instanceof Http) return yield* request(effect.arg)
   return yield effect
 })
 
-const nodeExpressGetPets = (ip: IPAddress) => pipe(ip, getPets, handleConfig, handleHttp, attempt, forkFiber)
+// Force config so it fails fast on startup
+const config = run(pipe(getConfig, handleNodeConfig))
+
+const nodeGetPets = (ip: IPAddress) => pipe(ip, getPets, handleConfig(config), handleHttp, attempt, withFiberAsync)
 
 express()
   .get('/', async (req, res) => {
     const ip = '71.112.150.159' as IPAddress
     // const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress) as IPAddress
 
-    const result = await promise(run(nodeExpressGetPets(ip as IPAddress)))
+    const result = await promise(run(nodeGetPets(ip as IPAddress)))
 
     return result instanceof Error ? res.status(500).send(result.stack) : res.json(result)
   })
