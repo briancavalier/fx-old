@@ -1,5 +1,5 @@
 import { Fail } from '../../../src/fail'
-import { Fx, HandlerContext, pure, pushContext } from '../../../src/fx'
+import { Fx, HandlerContext, pure } from '../../../src/fx'
 
 export type CatchError<Y, E> = Exclude<Y, FailOf<E>>
 type FailOf<E> = E extends unknown ? Fail<E> : never
@@ -16,7 +16,7 @@ export const catchError = <Y, R, Y1, R1, E extends ErrorsOf<Y>>(
     const i = f[Symbol.iterator]()
     let ir = i.next()
     while (!ir.done) {
-      if (ir.value instanceof HandlerContext) ir = i.next(yield pushContext(ir.value, handler) as any)
+      if (ir.value instanceof HandlerContext) ir = i.next(yield* new HandlerContext(handler(ir.value.arg)) as any)
 
       if (ir.value instanceof Fail) return yield* handleError(ir.value.arg)
       else ir = i.next(yield ir.value as CatchError<Y, E>)
@@ -25,12 +25,3 @@ export const catchError = <Y, R, Y1, R1, E extends ErrorsOf<Y>>(
   }
   return handler(f)
 }
-// fx(function* () {
-//   const i = f[Symbol.iterator]()
-//   let ir = i.next()
-//   while (!ir.done) {
-//     if (ir.value instanceof Fail) return yield* handleError(ir.value.arg)
-//     else ir = i.next(yield ir.value as CatchError<Y, E>)
-//   }
-//   return ir.value
-// })
