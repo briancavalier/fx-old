@@ -1,12 +1,9 @@
-import { Effect } from './fx'
+import { Effect, Fx, pure } from './fx'
 
-export class Async<A> extends Effect<Task<A>, A> {}
+export class Async<D, A> extends Effect<Task<D, A>, A> {}
 
-export const async = <A>(t: Task<A>): Async<A> => new Async(t)
+export const async = <D, A>(t: Task<D, A>): Async<D, A> => new Async(t)
 
-export type Task<A> = (k: (a: A) => void) => Dispose
+export type Task<D, A> = (k: (a: A) => void) => Fx<D, void>
 
-export type Dispose = () => void
-
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-export const disposeNone = () => {}
+export const disposeNone: Fx<never, void> = pure(undefined)

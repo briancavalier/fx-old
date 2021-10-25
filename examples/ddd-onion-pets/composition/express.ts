@@ -30,6 +30,7 @@ type Config = {
 const getConfig = fx(function* () {
   const env = yield* getEnv
   return {
+    port: env.PORT ? parseInt(env.PORT, 10) : 8000,
     radar: {
       baseUrl: new URL(env.RADAR_BASE_URL ?? 'https://api.radar.io/v1/'),
       apiKey: env.RADAR_API_KEY ?? (yield* failEnvVarNotSet('RADAR_API_KEY'))
@@ -71,19 +72,19 @@ const handleHttp = handler(function* (effect: Http<GetRequest | PostRequest<unkn
 })
 
 // Force config so it fails fast on startup
-const config = run(pipe(getConfig, handleNodeConfig))
+const config = run(handleNodeConfig(getConfig))
 
 const nodeGetPets = (ip: IPAddress) => pipe(ip, getPets, handleConfig(config), handleHttp, attempt, withFiberAsync)
 
 express()
   .get('/', async (req, res) => {
-    // const ip = '71.112.150.159' as IPAddress
-    const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress) as IPAddress
+    const ip = '71.112.150.159' as IPAddress
+    // const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress) as IPAddress
 
     const result = await promise(run(nodeGetPets(ip as IPAddress)))
 
     return result instanceof Error ? res.status(500).send(result.stack) : res.json(result)
   })
-  .listen(8080, () => {
-    console.log(`Listening on ${8080}`)
+  .listen(config.port, () => {
+    console.log(`Listening on ${config.port}`)
   })

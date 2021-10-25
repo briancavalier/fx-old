@@ -23,6 +23,16 @@ export const pure = <R>(r: R): Fx<never, R> => ({
   }
 })
 
+export const fromIO = <A>(io: () => A): Fx<never, A> =>
+  fx(function* () {
+    return io()
+  })
+
+export const defer = <Y, R>(f: () => Fx<Y, R>): Fx<Y, R> =>
+  fx(function* () {
+    return yield* f()
+  })
+
 export const run = <R>(fx: Fx<never, R>): R => fx[Symbol.iterator]().next().value
 
 export class HandlerContext<Y, R, R1> extends Effect<Fx<Y, R>, Fx<never, R1>> {}
@@ -47,6 +57,7 @@ export const handleWith = <Y, R, Y1, R1>(f: Fx<Y, R>, h: (f: Fx<Y, R>) => Fx<Y1,
     let ir = i.next()
 
     while (!ir.done)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (ir.value instanceof HandlerContext) ir = i.next(yield* new HandlerContext(handler(ir.value.arg)) as any)
       else ir = i.next(yield ir.value)
 
