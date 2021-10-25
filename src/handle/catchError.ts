@@ -1,5 +1,5 @@
-import { Fail } from '../../../src/fail'
-import { Fx, handleWith, pure } from '../../../src/fx'
+import { Fail } from '../fail'
+import { Fx, handleWith, pure } from '../fx'
 
 export type CatchError<Y, E> = Exclude<Y, FailOf<E>>
 type FailOf<E> = E extends unknown ? Fail<E> : never

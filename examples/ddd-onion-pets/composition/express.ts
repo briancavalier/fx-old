@@ -3,6 +3,7 @@ import { Fail, fail } from '../../../src/fail'
 
 import { promise } from '../../../src/fiber'
 import { fx, handler, run } from '../../../src/fx'
+import { attempt } from '../../../src/handle/catchError'
 import { withFiberAsync } from '../../../src/handle/fiberAsync'
 import { IPAddress } from '../application/getPetsNear'
 import { GetRequest, Http, PostRequest } from '../infrastructure/http'
@@ -14,7 +15,6 @@ import {
   PetfinderCredentials
 } from '../infrastructure/petfinder'
 import { GetRadarConfig, RadarConfig } from '../infrastructure/radar'
-import { attempt } from '../lib/catchError'
 import { GetEnv, getEnv } from '../lib/env'
 import { pipe } from '../lib/pipe'
 import { getPets } from './getPets'
@@ -77,8 +77,8 @@ const nodeGetPets = (ip: IPAddress) => pipe(ip, getPets, handleConfig(config), h
 
 express()
   .get('/', async (req, res) => {
-    const ip = '71.112.150.159' as IPAddress
-    // const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress) as IPAddress
+    // const ip = '71.112.150.159' as IPAddress
+    const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress) as IPAddress
 
     const result = await promise(run(nodeGetPets(ip as IPAddress)))
 
