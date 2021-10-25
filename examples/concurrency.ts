@@ -1,13 +1,13 @@
-import { async } from '../src/async'
-import { Concurrent, Join, fork, join } from '../src/concurrent'
-import { Fiber, promise } from '../src/fiber'
+import { Async, async } from '../src/async'
+import { Concurrent, fork } from '../src/concurrent'
+import { Fiber, join, promise } from '../src/fiber'
 import { Effect, Fx, HandlerContext, fx, handler, run } from '../src/fx'
 import { withFiberAsync } from '../src/handle/fiberAsync'
 import { withUnboundedConcurrency } from '../src/handle/unboundedConcurrency'
 
 class Delay extends Effect<number, void> {}
 
-const delay = <A>(ms: number, a: A): Fx<Delay, A> =>
+const delay = <A>(ms: number, a: A) =>
   fx(function* () {
     yield* new Delay(ms)
     return a
@@ -16,7 +16,7 @@ const delay = <A>(ms: number, a: A): Fx<Delay, A> =>
 const delayTree = (
   ms: number,
   depth: number
-): Fx<HandlerContext<unknown, number, Fiber<number>> | Delay | Join<number> | Concurrent<number>, number> =>
+): Fx<HandlerContext<unknown, unknown, Fiber<unknown>> | Async<unknown> | Delay | Concurrent<unknown>, number> =>
   fx(function* () {
     if (depth <= 1) return yield* delay(ms, 1)
 
@@ -24,7 +24,7 @@ const delayTree = (
     for (let i = 0; i < depth; i++) fibers.push(yield* fork(delayTree(ms, depth - 1)))
 
     let result = 0
-    for (const t of fibers) result += yield* join(t)
+    for (const f of fibers) result += yield* join(f)
 
     return result
   })

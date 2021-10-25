@@ -1,12 +1,13 @@
-import { Async, Dispose } from '../async'
+import { Async, disposeNone } from '../async'
 import { Fiber } from '../fiber'
 import { Fx, HandlerContext, fx } from '../fx'
 
-export const withFiberAsync = <Y extends Async<unknown> | HandlerContext<unknown, R, Fiber<R>>, R>(
+export const withFiberAsync = <Y extends Async<unknown> | HandlerContext<unknown, unknown, Fiber<unknown>>, R>(
   f: Fx<Y, R>
 ): Fx<never, Fiber<R>> =>
   fx(function* () {
-    let _dispose: Dispose
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    let _dispose = disposeNone
 
     const stepAsync = (i: Iterator<Y, R, unknown>, ir: IteratorResult<Y, R>, resolve: (r: R) => void): void => {
       if (ir.done) return resolve(ir.value)

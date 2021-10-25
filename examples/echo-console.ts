@@ -48,10 +48,10 @@ const handle = handler(function* (effect: Print | Read) {
   if (effect instanceof Print) return void process.stdout.write(effect.arg)
 
   if (effect instanceof Read)
-    return yield* async<string>((k) => {
+    return yield* async<string>((resume) => {
       const handler = (s: string) => {
         readline.close()
-        k(s)
+        resume(s)
       }
       const readline = createInterface({ input: process.stdin }).once('line', handler)
       return () => readline.removeListener('line', handler).close()

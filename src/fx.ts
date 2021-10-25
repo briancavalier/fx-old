@@ -29,20 +29,29 @@ export class HandlerContext<Y, R, R1> extends Effect<Fx<Y, R>, Fx<never, R1>> {}
 
 export const getHandlerContext = <Y, R, R1>(f: Fx<Y, R>): HandlerContext<Y, R, R1> => new HandlerContext(f)
 
-// export const pushContext = (c: HandlerContext, h: UnknownHandler): HandlerContext => new HandlerContext([...c.arg, h])
-
-export const handler = <Y1, Y2, A>(h: (effect: Y1) => Fx<Y2, A>) => {
-  const handler = <Y, R>(f: FxCore<Y, R, A>): Fx<Y2 | Exclude<Y, Y1>, R> =>
-    fx(function* () {
+export const handler =
+  <Y1, Y2, A>(h: (effect: Y1) => Fx<Y2, A>) =>
+  <Y, R>(f: FxCore<Y, R, A>): Fx<Y2 | Exclude<Y, Y1>, R> =>
+    handleWith(f, function* (f) {
       const i = f[Symbol.iterator]()
       let ir = i.next()
 
-      while (!ir.done)
-        if (ir.value instanceof HandlerContext) ir = i.next(yield* new HandlerContext(handler(ir.value.arg)) as any)
-        else ir = i.next(yield* h(ir.value as unknown as Y1))
+      while (!ir.done) ir = i.next(yield* h(ir.value as unknown as Y1))
 
       return ir.value
     })
 
-  return handler
+export const handleWith = <Y, R, Y1, R1>(f: Fx<Y, R>, h: (f: Fx<Y, R>) => Fx<Y1, R1>) => {
+  const handler = function* (f: Fx<Y, R>): Fx<Y1, R1> {
+    const i = h(f)[Symbol.iterator]()
+    let ir = i.next()
+
+    while (!ir.done)
+      if (ir.value instanceof HandlerContext) ir = i.next(yield* new HandlerContext(handler(ir.value.arg)) as any)
+      else ir = i.next(yield ir.value)
+
+    return ir.value
+  }
+
+  return handler(f)
 }
