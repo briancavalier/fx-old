@@ -13,6 +13,9 @@ export interface Fx<Y, R> extends FxCore<Y, R, unknown> {
   [Symbol.iterator](): Iterator<Y, R, unknown>
 }
 
+export type EffectsOf<F> = F extends Fx<infer Y, unknown> ? Y : never
+export type ResultOf<F> = F extends Fx<unknown, infer A> ? A : never
+
 export const fx = <Y, R>(f: () => Generator<Y, R>): Fx<Y, R> => ({
   [Symbol.iterator]: f
 })
@@ -51,7 +54,7 @@ export const handler =
       return ir.value
     })
 
-export const handleWith = <Y, R, Y1, R1>(f: Fx<Y, R>, h: (f: Fx<Y, R>) => Fx<Y1, R1>) => {
+export const handleWith = <Y, R, Y1, R1>(f: Fx<Y, R>, h: (f: Fx<Y, R>) => Fx<Y1, R1>): Fx<Y1, R1> => {
   const handler = function* (f: Fx<Y, R>): Fx<Y1, R1> {
     const i = h(f)[Symbol.iterator]()
     let ir = i.next()

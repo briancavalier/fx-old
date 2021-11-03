@@ -1,10 +1,12 @@
 import express from 'express'
+import { async } from '../../../src/async'
 import { Fail, fail } from '../../../src/fail'
 
 import { promise } from '../../../src/fiber'
-import { fx, handler, run } from '../../../src/fx'
+import { Fx, fromIO, fx, handler, run } from '../../../src/fx'
 import { attempt } from '../../../src/handle/catchError'
 import { withFiberAsync } from '../../../src/handle/fiberAsync'
+import { withUnboundedConcurrency } from '../../../src/handle/unboundedConcurrency'
 import { IPAddress } from '../application/getPetsNear'
 import { GetRequest, Http, PostRequest } from '../infrastructure/http'
 import { request } from '../infrastructure/http-node'
@@ -15,11 +17,14 @@ import {
   PetfinderCredentials
 } from '../infrastructure/petfinder'
 import { GetRadarConfig, RadarConfig } from '../infrastructure/radar'
+import { Delay, timeout } from '../infrastructure/timeout'
 import { GetEnv, getEnv } from '../lib/env'
 import { pipe } from '../lib/pipe'
 import { getPets } from './getPets'
 
 type Config = {
+  timeout: number
+  port: number
   radar: RadarConfig
   petfinder: {
     config: PetfinderConfig
@@ -30,6 +35,7 @@ type Config = {
 const getConfig = fx(function* () {
   const env = yield* getEnv
   return {
+    timeout: env.TIMEOUT ? parseInt(env.TIMEOUT, 10) : 2000,
     port: env.PORT ? parseInt(env.PORT, 10) : 8000,
     radar: {
       baseUrl: new URL(env.RADAR_BASE_URL ?? 'https://api.radar.io/v1/'),
@@ -51,6 +57,21 @@ const getConfig = fx(function* () {
 })
 
 const failEnvVarNotSet = (name: string) => fail(new Error(`${name} env var must be set`))
+
+const withTimeout =
+  (milliseconds: number) =>
+  <Y, R>(f: Fx<Y, R>) =>
+    timeout(milliseconds, f)
+
+const handleDelay = handler(function* (effect: Delay) {
+  if (effect instanceof Delay)
+    return yield* async<never, void>((k) => {
+      const t = setTimeout(k, effect.arg)
+      return fromIO(() => clearTimeout(t))
+    })
+
+  return yield effect
+})
 
 const handleNodeConfig = handler(function* (effect: GetEnv | Fail<unknown>) {
   if (effect instanceof GetEnv) return process.env
@@ -74,7 +95,18 @@ const handleHttp = handler(function* (effect: Http<GetRequest | PostRequest<unkn
 // Force config so it fails fast on startup
 const config = run(handleNodeConfig(getConfig))
 
-const nodeGetPets = (ip: IPAddress) => pipe(ip, getPets, handleConfig(config), handleHttp, attempt, withFiberAsync)
+const nodeGetPets = (ip: IPAddress) =>
+  pipe(
+    ip,
+    getPets,
+    withTimeout(config.timeout),
+    handleDelay,
+    handleConfig(config),
+    handleHttp,
+    attempt,
+    withUnboundedConcurrency(setImmediate, clearImmediate),
+    withFiberAsync
+  )
 
 express()
   .get('/', async (req, res) => {

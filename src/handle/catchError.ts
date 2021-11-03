@@ -15,6 +15,7 @@ export const catchError = <Y, R, Y1, R1, E extends ErrorsOf<Y>>(
   handleWith(f, function* (f: Fx<Y, R>) {
     const i = f[Symbol.iterator]()
     let ir = i.next()
+
     while (!ir.done)
       if (ir.value instanceof Fail) return yield* handleError(ir.value.arg)
       else ir = i.next(yield ir.value as CatchError<Y, E>)

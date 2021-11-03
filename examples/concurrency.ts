@@ -1,6 +1,6 @@
 import { Async, async } from '../src/async'
 import { Concurrent, fork } from '../src/concurrent'
-import { Fiber, dispose, join, promise } from '../src/fiber'
+import { Fiber, join, promise } from '../src/fiber'
 import { Effect, Fx, HandlerContext, fromIO, fx, handler, run } from '../src/fx'
 import { withFiberAsync } from '../src/handle/fiberAsync'
 import { withUnboundedConcurrency } from '../src/handle/unboundedConcurrency'
@@ -47,6 +47,6 @@ const start = Date.now()
 const handleConcurrency = withUnboundedConcurrency(setImmediate, clearImmediate)
 
 const r = run(withFiberAsync(handleConcurrency(handleDelay(delayTree(1000, 5)))))
-run(dispose(r))
+// run(dispose(r))
 
 promise(r).then((result) => console.log('DONE result:', result, 'time:', Date.now() - start, 'ms'))

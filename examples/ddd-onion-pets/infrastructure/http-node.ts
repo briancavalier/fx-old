@@ -9,7 +9,8 @@ import { GetRequest, PostRequest } from './http'
 
 export const request = <Request extends GetRequest | PostRequest<unknown>, Response>(r: Request) =>
   fx(function* () {
-    const response = yield* async<never, IncomingMessage>(http(createNodeRequest(r)))
+    const response = yield* async(http(createNodeRequest(r)))
+    if (response instanceof Error) return yield* fail(response)
     return JSON.parse(yield* handleResponse(r, response)) as Response
   })
 
@@ -37,13 +38,13 @@ export type NodeHttpRequestOptions = {
 }
 
 export const http =
-  ({ url, ...options }: NodeHttpRequestOptions): Task<never, IncomingMessage> =>
+  ({ url, ...options }: NodeHttpRequestOptions): Task<never, IncomingMessage | Error> =>
   (k) => {
-    const c =
-      url.protocol === 'https:' ? requestHttps(url.toString(), options, k) : requestHttp(url.toString(), options, k)
+    const u = url.toString()
+    const c = url.protocol === 'https:' ? requestHttps(u, options, k) : requestHttp(u, options, k)
 
-    c.end(options.method === 'POST' && options.body)
-    return fromIO(() => c.destroy())
+    c.on('error', k).end(options.method === 'POST' && options.body)
+    return fromIO(() => c.destroy(new Error(`http request aborted: ${url}`)))
   }
 
 export const readResponseBody = (r: IncomingMessage) =>
