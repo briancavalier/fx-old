@@ -29,11 +29,11 @@ export type PetfinderPets = {
   }>
 }
 
-export class GetPetfinderToken extends Effect<void, PetfinderToken> {}
+export class GetPetfinderToken extends Effect<'GetPetfinderToken', void, PetfinderToken> {}
 
-export class GetPetfinderCredentials extends Effect<void, PetfinderCredentials> {}
+export class GetPetfinderCredentials extends Effect<'GetPetfinderCredentials', void, PetfinderCredentials> {}
 
-export class GetPetfinderConfig extends Effect<void, PetfinderConfig> {}
+export class GetPetfinderConfig extends Effect<'GetPetfinderConfig', void, PetfinderConfig> {}
 
 export const getPetfinderPets = (l: Location) =>
   fx(function* () {

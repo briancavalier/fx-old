@@ -13,11 +13,11 @@ import { withFiberAsync } from '../src/handle/fiberAsync'
 // nowhere. Print represents the signature string -> void, i.e.
 // it consumes a string.
 
-class Read extends Effect<void, string> {}
+class Read extends Effect<'Read', void, string> {}
 
 const read = new Read()
 
-class Print extends Effect<string, void> {}
+class Print extends Effect<'Print', string, void> {}
 
 const print = (s: string): Print => new Print(s)
 

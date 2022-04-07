@@ -1,6 +1,6 @@
 import { Effect, Fx, pure } from './fx'
 
-export class Async<D, A> extends Effect<Task<D, A>, A> {}
+export class Async<D, A> extends Effect<'Async', Task<D, A>, A> {}
 
 export const async = <D, A>(t: Task<D, A>): Async<D, A> => new Async(t)
 

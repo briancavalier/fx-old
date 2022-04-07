@@ -18,7 +18,7 @@ export type RadarConfig = {
   apiKey: string
 }
 
-export class GetRadarConfig extends Effect<void, RadarConfig> {}
+export class GetRadarConfig extends Effect<'GetRadarConfig', void, RadarConfig> {}
 
 export const getIPAddressLocation = (ip: IPAddress) =>
   fx(function* () {

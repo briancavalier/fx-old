@@ -44,7 +44,7 @@ export const http =
     const c = url.protocol === 'https:' ? requestHttps(u, options, k) : requestHttp(u, options, k)
 
     c.on('error', k).end(options.method === 'POST' && options.body)
-    return fromIO(() => c.destroy(new Error(`http request aborted: ${url}`)))
+    return fromIO(() => void c.destroy(new Error(`http request aborted: ${url}`)))
   }
 
 export const readResponseBody = (r: IncomingMessage) =>

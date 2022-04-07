@@ -3,10 +3,10 @@ import { Location, Pet } from '../domain/pets'
 
 export type IPAddress = string & { _type: 'IPAddress' }
 
-export class GetLocation extends Effect<IPAddress, Location> {}
+export class GetLocation extends Effect<'GetLocation', IPAddress, Location> {}
 export const getLocation = (ip: IPAddress): GetLocation => new GetLocation(ip)
 
-export class GetPets extends Effect<Location, readonly Pet[]> {}
+export class GetPets extends Effect<'GetLocation', Location, readonly Pet[]> {}
 export const getPets = (l: Location): GetPets => new GetPets(l)
 
 export const getPetsNear = (ip: IPAddress) =>
