@@ -6,7 +6,7 @@ export abstract class Effect<T extends string, A, R> {
   }
 }
 
-export interface FxInternal<Y, R, A> {
+interface FxInternal<Y, R, A> {
   [Symbol.iterator](): Iterator<Y, R, A>
 }
 
@@ -26,12 +26,32 @@ export const pure = <R>(x: R): Fx<never, R> =>
 
 export const run = <R>(fx: Fx<never, R>): R => fx[Symbol.iterator]().next().value
 
-export const handler = <Y1, Y2, A>(h: (effect: Y1) => Fx<Y2, A>) =>
-  function* <Y, R>(f: FxInternal<Y, R, A>): Fx<Y2 | Exclude<Y, Y1>, R> {
+export const handler =
+  <Y1, Y2, A>(h: (effect: Y1) => Fx<Y2, A>) =>
+  <Y, R>(f: FxInternal<Y, R, A>): Fx<Y2 | Exclude<Y, Y1>, R> =>
+    withHandler(f, function* (i) {
+      let ir = i.next()
+      while (!ir.done) ir = i.next(yield* h(ir.value as unknown as Y1))
+      return ir.value
+    })
+
+export const withHandler = <Y1, R1, A1, Y2, R2>(
+  f: FxInternal<Y1, R1, A1>,
+  h: (i: Iterator<Y1, R1, A1>) => Fx<Y2, R2>
+) => ({
+  [Symbol.iterator]() {
     const i = f[Symbol.iterator]()
-    let ir = i.next()
+    const hi = h(i)[Symbol.iterator]()
 
-    while (!ir.done) ir = i.next(yield* h(ir.value as unknown as Y1))
-
-    return ir.value
+    return {
+      next(x: A1) {
+        const hir = hi.next(x)
+        return hir.done ? this.return(hir.value) : hir
+      },
+      return(x: R2): IteratorResult<Y2, R2> {
+        i.return && i.return()
+        return { done: true, value: x }
+      }
+    }
   }
+})

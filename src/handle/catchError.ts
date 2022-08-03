@@ -1,5 +1,5 @@
 import { Fail } from '../fail'
-import { Fx, fx, pure } from '../fx'
+import { Fx, pure, withHandler } from '../fx'
 
 export type CatchError<Y, E> = Exclude<Y, FailOf<E>>
 type FailOf<E> = E extends unknown ? Fail<E> : never
@@ -12,8 +12,7 @@ export const catchError = <Y, R, Y1, R1, E extends ErrorsOf<Y>>(
   f: Fx<Y, R>,
   handleError: (e: E) => Fx<Y1, R1>
 ): Fx<Y1 | CatchError<Y, E>, R | R1> =>
-  fx(function* () {
-    const i = f[Symbol.iterator]()
+  withHandler(f, function* (i) {
     let ir = i.next()
 
     while (!ir.done)
