@@ -1,42 +1,33 @@
-export abstract class Effect<T, A, R> {
-  _t!: T
+export abstract class Effect<T extends string, A, R> {
+  _effect!: T
   constructor(public readonly arg: A) {}
   *[Symbol.iterator](): Iterator<this, R, R> {
     return yield this
   }
 }
 
-export interface Fx<Y, R, A = unknown> {
+export interface FxInternal<Y, R, A> {
   [Symbol.iterator](): Iterator<Y, R, A>
 }
 
+export type Fx<Y, R> = FxInternal<Y, R, unknown>
+
 export type EffectsOf<F> = F extends Fx<infer Y, unknown> ? Y : never
-export type ResultOf<F> = F extends Fx<unknown, infer A> ? A : never
+export type ResultOf<F> = F extends Fx<unknown, infer R> ? R : never
 
 export const fx = <Y, R>(f: () => Generator<Y, R>): Fx<Y, R> => ({
   [Symbol.iterator]: f
 })
 
-export const pure = <R>(r: R): Fx<never, R> => ({
-  *[Symbol.iterator]() {
-    return r
-  }
-})
-
-export const fromIO = <A>(io: () => A): Fx<never, A> =>
+export const pure = <R>(x: R): Fx<never, R> =>
   fx(function* () {
-    return io()
-  })
-
-export const defer = <Y, R>(f: () => Fx<Y, R>): Fx<Y, R> =>
-  fx(function* () {
-    return yield* f()
+    return x
   })
 
 export const run = <R>(fx: Fx<never, R>): R => fx[Symbol.iterator]().next().value
 
 export const handler = <Y1, Y2, A>(h: (effect: Y1) => Fx<Y2, A>) =>
-  function* <Y, R>(f: Fx<Y, R, A>): Fx<Y2 | Exclude<Y, Y1>, R> {
+  function* <Y, R>(f: FxInternal<Y, R, A>): Fx<Y2 | Exclude<Y, Y1>, R> {
     const i = f[Symbol.iterator]()
     let ir = i.next()
 

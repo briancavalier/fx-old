@@ -1,9 +1,9 @@
-import { Effect, Fx, pure } from './fx'
+import { Effect } from './fx'
 
-export class Async<D, A> extends Effect<'Async', Task<D, A>, A> {}
+export class Async<A> extends Effect<'Async', AsyncTask<A>, A> {}
 
-export const async = <D, A>(t: Task<D, A>): Async<D, A> => new Async(t)
+export const async = <A>(run: AsyncTask<A>) => new Async(run)
 
-export type Task<D, A> = (k: (a: A) => void) => Fx<D, void>
+export type AsyncTask<A> = (k: (a: A) => void) => Cancel
 
-export const disposeNone: Fx<never, void> = pure(undefined)
+export type Cancel = () => void
